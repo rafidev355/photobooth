@@ -1,0 +1,1911 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Photobooth — 인생네컷 · Untuk Dua Orang</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Plus Jakarta Sans & Noto Sans KR -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Font Awesome untuk Ikon -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- MediaPipe Selfie Segmentation (Optional Smart Background) -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js" crossorigin="anonymous"></script>
+
+  <style>
+    * {
+      font-family: 'Plus Jakarta Sans', 'Noto Sans KR', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: #F7F7F8;
+      color: #141416;
+      overflow-x: hidden;
+    }
+
+    /* Animasi lembut untuk strip foto di beranda */
+    @keyframes floatStrip {
+      0%, 100% { transform: rotate(-2.5deg) translateY(0px); }
+      50% { transform: rotate(-1.5deg) translateY(-6px); }
+    }
+
+    .hero-strip {
+      animation: floatStrip 4.5s ease-in-out infinite;
+      box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.22);
+    }
+
+    /* Efek Flash Kamera */
+    @keyframes cameraFlash {
+      0% { opacity: 0.95; }
+      100% { opacity: 0; }
+    }
+
+    .flash-active {
+      animation: cameraFlash 0.45s ease-out forwards;
+    }
+
+    /* Custom Scrollbar Horizontal untuk Filter */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Animasi Pulse Status Online */
+    @keyframes pulseDot {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.4); opacity: 0.6; }
+    }
+    .online-dot {
+      animation: pulseDot 1.6s infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-pink-200 selection:text-pink-900">
+
+  <!-- Flash Overlay saat jepret foto -->
+  <div id="flashOverlay" class="fixed inset-0 bg-white pointer-events-none opacity-0 z-50"></div>
+
+  <!-- Toast / Message Box (Pengganti alert) -->
+  <div id="toastContainer" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-[90%] max-w-sm pointer-events-none"></div>
+
+  <!-- ==================== VIEW 1: LANDING / BERANDA ==================== -->
+  <main id="viewHome" class="flex-1 flex flex-col items-center justify-between px-5 pb-8 pt-0 max-w-md mx-auto w-full transition-all duration-300">
+    
+    <!-- Top Section: Tilted Photostrip Preview (Mirip Screenshot) -->
+    <div class="w-full flex flex-col items-center">
+      <div class="hero-strip bg-[#18181B] p-2.5 pt-0 pb-3 rounded-b-xl w-[142px] sm:w-[155px] -mt-2 select-none">
+        <!-- Frame 1 -->
+        <div class="w-full aspect-[4/3] bg-zinc-800 mb-2 overflow-hidden relative rounded-[2px]">
+          <svg viewBox="0 0 200 150" class="w-full h-full">
+            <defs>
+              <linearGradient id="bgCafe1" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#3E2723"/>
+                <stop offset="100%" stop-color="#6D4C41"/>
+              </linearGradient>
+            </defs>
+            <rect width="200" height="150" fill="url(#bgCafe1)"/>
+            <circle cx="100" cy="40" r="35" fill="#FFECB3" opacity="0.25"/>
+            <!-- Cowok Kacamata -->
+            <circle cx="62" cy="85" r="24" fill="#F5CBA7"/>
+            <path d="M38 80 Q62 52 86 80" fill="#1C1C1E"/>
+            <rect x="46" y="79" width="13" height="9" rx="2" fill="none" stroke="#111" stroke-width="2"/>
+            <rect x="65" y="79" width="13" height="9" rx="2" fill="none" stroke="#111" stroke-width="2"/>
+            <line x1="59" y1="83" x2="65" y2="83" stroke="#111" stroke-width="2"/>
+            <circle cx="52" cy="83" r="2" fill="#111"/>
+            <circle cx="71" cy="83" r="2" fill="#111"/>
+            <path d="M58 95 Q62 99 66 95" stroke="#A93226" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <path d="M32 150 Q62 112 92 150" fill="#F4F6F7"/>
+            <!-- Cewek Pose Lucu -->
+            <path d="M112 85 Q138 50 164 85 L168 145 L108 145 Z" fill="#18181B"/>
+            <circle cx="138" cy="85" r="23" fill="#FAD7A0"/>
+            <path d="M115 82 Q138 58 161 82" fill="#18181B"/>
+            <circle cx="130" cy="84" r="2.2" fill="#111"/>
+            <circle cx="146" cy="84" r="2.2" fill="#111"/>
+            <ellipse cx="126" cy="90" rx="4" ry="2" fill="#F1948A" opacity="0.7"/>
+            <ellipse cx="150" cy="90" rx="4" ry="2" fill="#F1948A" opacity="0.7"/>
+            <path d="M134 95 Q138 98 142 95" stroke="#C0392B" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <path d="M112 150 Q138 114 164 150" fill="#FFFFFF"/>
+            <!-- Tangan di pipi -->
+            <ellipse cx="155" cy="96" rx="5" ry="9" transform="rotate(-15 155 96)" fill="#FAD7A0"/>
+          </svg>
+        </div>
+
+        <!-- Frame 2: Pose Heart Bersama -->
+        <div class="w-full aspect-[4/3] bg-zinc-800 mb-2 overflow-hidden relative rounded-[2px]">
+          <svg viewBox="0 0 200 150" class="w-full h-full">
+            <rect width="200" height="150" fill="#D4AC0D" opacity="0.35"/>
+            <rect x="20" y="10" width="160" height="110" rx="8" fill="#FDEBD0"/>
+            <!-- Cowok -->
+            <circle cx="60" cy="86" r="23" fill="#F5CBA7"/>
+            <path d="M37 80 Q60 54 83 80" fill="#1C1C1E"/>
+            <rect x="45" y="80" width="12" height="8" rx="2" fill="none" stroke="#111" stroke-width="2"/>
+            <rect x="63" y="80" width="12" height="8" rx="2" fill="none" stroke="#111" stroke-width="2"/>
+            <path d="M55 95 Q60 101 65 95" stroke="#A93226" stroke-width="2" fill="none"/>
+            <path d="M30 150 Q60 112 90 150" fill="#F4F6F7"/>
+            <!-- Cewek -->
+            <path d="M114 85 Q140 50 166 85 L170 145 L110 145 Z" fill="#18181B"/>
+            <circle cx="140" cy="86" r="22" fill="#FAD7A0"/>
+            <circle cx="132" cy="84" r="2" fill="#111"/>
+            <circle cx="148" cy="84" r="2" fill="#111"/>
+            <path d="M135 95 Q140 100 145 95" stroke="#C0392B" stroke-width="2" fill="none"/>
+            <path d="M114 150 Q140 114 166 150" fill="#FFFFFF"/>
+            <!-- Tangan Bentuk Love di Tengah -->
+            <path d="M100 104 C92 92, 80 96, 86 107 L100 118 L114 107 C120 96, 108 92, 100 104 Z" fill="#F5CBA7" stroke="#E59866" stroke-width="1.5"/>
+            <text x="93" y="65" font-size="16">💖</text>
+          </svg>
+        </div>
+
+        <!-- Frame 3 -->
+        <div class="w-full aspect-[4/3] bg-zinc-800 mb-2 overflow-hidden relative rounded-[2px]">
+          <svg viewBox="0 0 200 150" class="w-full h-full">
+            <rect width="200" height="150" fill="#5D4037"/>
+            <rect x="25" y="10" width="150" height="105" rx="6" fill="#F9E79F"/>
+            <!-- Cowok -->
+            <circle cx="62" cy="86" r="23" fill="#F5CBA7"/>
+            <path d="M39 80 Q62 54 85 80" fill="#1C1C1E"/>
+            <rect x="47" y="80" width="12" height="8" rx="2" fill="none" stroke="#111" stroke-width="2"/>
+            <rect x="65" y="80" width="12" height="8" rx="2" fill="none" stroke="#111" stroke-width="2"/>
+            <path d="M56 96 Q62 100 68 96" stroke="#A93226" stroke-width="2" fill="none"/>
+            <path d="M32 150 Q62 112 92 150" fill="#F4F6F7"/>
+            <!-- Cewek -->
+            <path d="M112 85 Q138 50 164 85 L168 145 L108 145 Z" fill="#18181B"/>
+            <circle cx="138" cy="86" r="22" fill="#FAD7A0"/>
+            <circle cx="130" cy="84" r="2" fill="#111"/>
+            <circle cx="146" cy="84" r="2" fill="#111"/>
+            <path d="M133 96 Q138 99 143 96" stroke="#C0392B" stroke-width="2" fill="none"/>
+            <path d="M112 150 Q138 114 164 150" fill="#FFFFFF"/>
+          </svg>
+        </div>
+
+        <!-- Watermark bawah strip -->
+        <p class="text-[9px] text-zinc-400 text-center tracking-wider font-medium mt-1">인생네컷 · photobooth</p>
+      </div>
+
+      <!-- Pink Pill Badge -->
+      <div class="mt-6 bg-[#FCE4EC] text-[#4A2532] px-4 py-1.5 rounded-full text-xs font-semibold tracking-tight shadow-xs">
+        인생네컷 · untuk dua orang
+      </div>
+
+      <!-- Main Title & Description -->
+      <h1 class="mt-3 text-[36px] sm:text-[40px] font-extrabold tracking-tight text-[#141416] leading-tight">
+        Photobooth
+      </h1>
+      <p class="mt-2.5 text-center text-[#5A5A65] text-[15px] leading-relaxed max-w-[310px]">
+        Satu lembar foto, menampilkan kalian berdua, diambil dari dua tempat sekaligus.
+      </p>
+    </div>
+
+    <!-- Middle Action Buttons (Sesuai Gambar) -->
+    <div class="w-full mt-7 space-y-3">
+      <!-- Primary Dark Button: Mulai sebuah ruangan -->
+      <button onclick="createOnlineRoom()" id="btnCreateRoom" class="w-full bg-[#18181B] hover:bg-[#27272A] active:scale-[0.99] transition-all text-white rounded-2xl px-5 py-4 flex items-center justify-between shadow-lg shadow-zinc-900/10 group cursor-pointer">
+        <div class="text-left leading-snug">
+          <span class="block font-bold text-[16px]">Mulai sebuah</span>
+          <span class="block font-bold text-[16px]">ruangan</span>
+        </div>
+        <div class="text-right text-zinc-400 group-hover:text-zinc-200 transition-colors text-[13px] leading-tight">
+          <span class="block">dengan</span>
+          <span class="block">pasanganmu</span>
+        </div>
+      </button>
+
+      <!-- Secondary White Button: Gabung ke ruangan -->
+      <button onclick="openJoinModal()" class="w-full bg-white hover:bg-zinc-50 active:scale-[0.99] transition-all text-[#18181B] border border-zinc-200/90 rounded-2xl px-5 py-4 flex items-center justify-between shadow-xs cursor-pointer">
+        <span class="font-bold text-[16px]">Gabung ke ruangan</span>
+        <span class="text-zinc-400 text-[13px] font-medium">dengan kode</span>
+      </button>
+    </div>
+
+    <!-- Bottom Section: Cara bermain lainnya -->
+    <div class="w-full mt-7">
+      <div class="flex items-center gap-3 mb-3.5">
+        <div class="h-[1px] bg-zinc-200 flex-1"></div>
+        <span class="text-xs font-semibold text-zinc-500">Cara bermain lainnya</span>
+        <div class="h-[1px] bg-zinc-200 flex-1"></div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-2.5">
+        <!-- Card 1: Hanya aku -->
+        <button onclick="startLocalMode('solo')" class="bg-[#FDE2EB] hover:brightness-95 active:scale-95 transition-all rounded-2xl p-3 flex flex-col items-center justify-between aspect-[4/4.6] text-center cursor-pointer">
+          <div class="flex-1 flex items-center justify-center">
+            <!-- Cute Pink Camera SVG -->
+            <svg class="w-12 h-12" viewBox="0 0 64 64" fill="none">
+              <rect x="20" y="6" width="24" height="16" rx="2" fill="#FFF" stroke="#F48FB1" stroke-width="2"/>
+              <rect x="23" y="9" width="18" height="10" fill="#BBDEFB"/>
+              <rect x="10" y="20" width="44" height="34" rx="8" fill="#F48FB1"/>
+              <rect x="14" y="24" width="36" height="26" rx="5" fill="#F8BBD0"/>
+              <circle cx="32" cy="37" r="10" fill="#FFF" stroke="#EC407A" stroke-width="2.5"/>
+              <circle cx="32" cy="37" r="5" fill="#F06292"/>
+              <circle cx="45" cy="27" r="2.5" fill="#FFF"/>
+              <path d="M8 14L10 10L12 14L16 16L12 18L10 22L8 18L4 16L8 14Z" fill="#FFD54F"/>
+            </svg>
+          </div>
+          <span class="text-[12px] font-bold text-[#18181B] leading-tight">Hanya aku</span>
+        </button>
+
+        <!-- Card 2: Teman-teman, satu kamera -->
+        <button onclick="startLocalMode('duo_local')" class="bg-[#E3EEF8] hover:brightness-95 active:scale-95 transition-all rounded-2xl p-3 flex flex-col items-center justify-between aspect-[4/4.6] text-center cursor-pointer">
+          <div class="flex-1 flex items-center justify-center">
+            <!-- Tripod & 3 Cute Faces SVG -->
+            <svg class="w-13 h-13" viewBox="0 0 64 64" fill="none">
+              <circle cx="32" cy="15" r="8" fill="#FFE082"/>
+              <circle cx="29" cy="14" r="1" fill="#333"/><circle cx="35" cy="14" r="1" fill="#333"/>
+              <path d="M30 17Q32 19 34 17" stroke="#333" stroke-width="1.2" stroke-linecap="round"/>
+              <circle cx="20" cy="22" r="8" fill="#F8BBD0"/>
+              <circle cx="18" cy="21" r="1" fill="#333"/><circle cx="22" cy="21" r="1" fill="#333"/>
+              <circle cx="44" cy="22" r="8" fill="#CE93D8"/>
+              <circle cx="42" cy="21" r="1" fill="#333"/><circle cx="46" cy="21" r="1" fill="#333"/>
+              <!-- Phone on Tripod -->
+              <rect x="23" y="25" width="18" height="12" rx="3" fill="#64B5F6" stroke="#1E88E5" stroke-width="1.5"/>
+              <circle cx="32" cy="31" r="3" fill="#E3F2FD"/>
+              <path d="M32 37V52M32 42L21 56M32 42L43 56" stroke="#42A5F5" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <span class="text-[11px] font-bold text-[#18181B] leading-tight">Teman-teman,<br>satu kamera</span>
+        </button>
+
+        <!-- Card 3: Kelompok 4 -->
+        <button onclick="startLocalMode('group4')" class="bg-[#EDE3F8] hover:brightness-95 active:scale-95 transition-all rounded-2xl p-3 flex flex-col items-center justify-between aspect-[4/4.6] text-center cursor-pointer">
+          <div class="flex-1 flex items-center justify-center">
+            <!-- 4 Mini Phones Grid SVG -->
+            <svg class="w-12 h-12" viewBox="0 0 64 64" fill="none">
+              <rect x="13" y="10" width="17" height="20" rx="3" fill="#D1C4E9" stroke="#7E57C2" stroke-width="1.5"/>
+              <circle cx="21.5" cy="20" r="5" fill="#F8BBD0"/>
+              <rect x="34" y="10" width="17" height="20" rx="3" fill="#D1C4E9" stroke="#7E57C2" stroke-width="1.5"/>
+              <circle cx="42.5" cy="20" r="5" fill="#BBDEFB"/>
+              <rect x="13" y="34" width="17" height="20" rx="3" fill="#D1C4E9" stroke="#7E57C2" stroke-width="1.5"/>
+              <circle cx="21.5" cy="44" r="5" fill="#C8E6C9"/>
+              <rect x="34" y="34" width="17" height="20" rx="3" fill="#D1C4E9" stroke="#7E57C2" stroke-width="1.5"/>
+              <circle cx="42.5" cy="44" r="5" fill="#FFE082"/>
+              <path d="M55 28L57 24L59 28L63 30L59 32L57 36L55 32L51 30L55 28Z" fill="#FFD54F"/>
+            </svg>
+          </div>
+          <span class="text-[12px] font-bold text-[#18181B] leading-tight">Kelompok 4</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Footer Credit -->
+    <footer class="mt-6 text-center">
+      <p class="text-[11px] text-zinc-400 font-medium tracking-wide">By RafiDev</p>
+    </footer>
+  </main>
+
+  <!-- ==================== VIEW 2: STUDIO PHOTOBOOTH (KAMERA + EFEK + ONLINE) ==================== -->
+  <section id="viewBooth" class="hidden flex-1 flex flex-col max-w-md mx-auto w-full min-h-screen bg-[#121215] text-white">
+    
+    <!-- Top Header Bar -->
+    <div class="px-4 py-3 flex items-center justify-between bg-zinc-900/90 backdrop-blur-md border-b border-zinc-800 sticky top-0 z-30">
+      <button onclick="exitBooth()" class="w-9 h-9 rounded-full bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center text-zinc-300 cursor-pointer">
+        <i class="fa-solid fa-arrow-left text-sm"></i>
+      </button>
+
+      <!-- Room Status Pill -->
+      <div id="boothHeaderStatus" class="flex items-center gap-2 bg-zinc-800/90 px-3.5 py-1.5 rounded-full border border-zinc-700/80">
+        <span id="connectionDot" class="w-2 h-2 rounded-full bg-amber-400 online-dot"></span>
+        <span id="roomCodeBadge" class="text-xs font-bold tracking-wider text-zinc-100">MODE SOLO</span>
+      </div>
+
+      <!-- Button Invite / Share Link (Jika Online Mode) -->
+      <button id="btnOpenShareModal" onclick="openShareModal()" class="px-3 py-1.5 rounded-full bg-pink-500 hover:bg-pink-600 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-pink-500/20 cursor-pointer">
+        <i class="fa-solid fa-user-plus"></i>
+        <span>Undang</span>
+      </button>
+    </div>
+
+    <!-- Banner Status Pasangan Online -->
+    <div id="partnerBanner" class="hidden bg-gradient-to-r from-pink-500/20 via-purple-500/20 to-indigo-500/20 border-b border-pink-500/20 px-4 py-2 flex items-center justify-between text-xs">
+      <div class="flex items-center gap-2">
+        <span id="partnerStatusIcon" class="text-base">⏳</span>
+        <div>
+          <p id="partnerStatusTitle" class="font-bold text-pink-200">Menunggu pasangan bergabung...</p>
+          <p id="partnerStatusSub" class="text-[11px] text-zinc-400">Bagikan link undangan ke WA, IG, atau FB</p>
+        </div>
+      </div>
+      <button id="btnSimPartner" onclick="toggleBotPartner()" class="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-[11px] font-semibold text-white whitespace-nowrap cursor-pointer">
+        Tes Bot AI 🤖
+      </button>
+    </div>
+
+    <!-- Main Camera & Live Preview Stage -->
+    <div class="flex-1 flex flex-col items-center justify-center p-3 relative">
+      
+      <!-- Dual Frame Container (Menampilkan Kamera Kamu + Preview Pasangan jika Online) -->
+      <div id="cameraStageWrapper" class="w-full relative rounded-3xl overflow-hidden bg-zinc-900 border border-zinc-800 shadow-2xl">
+        
+        <!-- Progress Pose Indicator -->
+        <div class="absolute top-3 left-3 right-3 z-20 flex items-center justify-between pointer-events-none">
+          <div class="bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 border border-white/10">
+            <span class="text-pink-400">📸</span>
+            <span id="poseCounterText">Pose 1 / 4</span>
+          </div>
+
+          <div class="flex items-center gap-1.5 pointer-events-auto">
+            <!-- Toggle Mirror -->
+            <button onclick="toggleMirror()" title="Cerminkan Kamera" class="w-8 h-8 rounded-full bg-black/60 backdrop-blur-md border border-white/10 flex items-center justify-center text-xs hover:bg-black/80 cursor-pointer">
+              <i class="fa-solid fa-left-right"></i>
+            </button>
+            <!-- Switch Front/Back Camera -->
+            <button onclick="switchCamera()" title="Ganti Kamera Depan/Belakang" class="w-8 h-8 rounded-full bg-black/60 backdrop-blur-md border border-white/10 flex items-center justify-center text-xs hover:bg-black/80 cursor-pointer">
+              <i class="fa-solid fa-camera-rotate"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Split View Grid (Jika Online: Kiri Kamu, Kanan Pasangan) -->
+        <div id="dualCameraGrid" class="grid grid-cols-1 gap-1 bg-zinc-950">
+          
+          <!-- Canvas Kamera Utama (User) -->
+          <div class="relative w-full aspect-[4/3] bg-zinc-900 overflow-hidden flex items-center justify-center">
+            <video id="webcamVideo" autoplay playsinline muted class="hidden"></video>
+            <canvas id="liveCanvas" class="w-full h-full object-cover"></canvas>
+            
+            <!-- Label Nama -->
+            <span class="absolute bottom-2.5 left-2.5 bg-black/60 backdrop-blur-xs text-[10px] font-bold px-2.5 py-0.5 rounded-full text-white/90">
+              Kamu ✨
+            </span>
+          </div>
+
+          <!-- Slot Kamera / Live Preview Pasangan (Muncul di Mode Online) -->
+          <div id="partnerLiveSlot" class="hidden relative w-full aspect-[4/3] bg-zinc-900/90 overflow-hidden flex flex-col items-center justify-center border-t border-zinc-800">
+            <img id="partnerLivePreviewImg" src="" alt="Pasangan" class="hidden w-full h-full object-cover" />
+            <div id="partnerWaitingPlaceholder" class="flex flex-col items-center justify-center p-4 text-center">
+              <div class="w-12 h-12 rounded-full bg-pink-500/20 text-pink-400 flex items-center justify-center text-xl mb-2 animate-bounce">
+                💌
+              </div>
+              <p class="text-xs font-bold text-zinc-200">Slot Pasanganmu</p>
+              <p class="text-[11px] text-zinc-400 mt-0.5 max-w-[200px]">Kirim link undangan agar wajah pasanganmu muncul di sini!</p>
+              <button onclick="openShareModal()" class="mt-2.5 px-3 py-1.5 rounded-full bg-pink-500 text-white text-[11px] font-bold shadow-sm cursor-pointer">
+                Bagikan Link Undangan
+              </button>
+            </div>
+            <span class="absolute bottom-2.5 left-2.5 bg-black/60 backdrop-blur-xs text-[10px] font-bold px-2.5 py-0.5 rounded-full text-pink-300">
+              Pasangan 💕
+            </span>
+          </div>
+
+        </div>
+
+        <!-- Countdown Overlay (3.. 2.. 1..) -->
+        <div id="countdownOverlay" class="hidden absolute inset-0 bg-black/45 backdrop-blur-[2px] z-30 flex flex-col items-center justify-center">
+          <span id="countdownNumber" class="text-7xl font-black text-white drop-shadow-[0_4px_20px_rgba(236,72,153,0.8)] scale-110 transition-transform">3</span>
+          <span class="text-xs font-bold uppercase tracking-widest text-pink-200 mt-2">Siap-siap pose lucu!</span>
+        </div>
+      </div>
+
+      <!-- Mini Thumbnails Hasil Jepretan Sementara -->
+      <div id="capturedThumbsRow" class="w-full grid grid-cols-4 gap-2 mt-3">
+        <div id="thumb-0" class="aspect-[4/3] rounded-xl bg-zinc-800/80 border border-dashed border-zinc-700 flex items-center justify-center text-[11px] text-zinc-500 font-bold overflow-hidden">1</div>
+        <div id="thumb-1" class="aspect-[4/3] rounded-xl bg-zinc-800/80 border border-dashed border-zinc-700 flex items-center justify-center text-[11px] text-zinc-500 font-bold overflow-hidden">2</div>
+        <div id="thumb-2" class="aspect-[4/3] rounded-xl bg-zinc-800/80 border border-dashed border-zinc-700 flex items-center justify-center text-[11px] text-zinc-500 font-bold overflow-hidden">3</div>
+        <div id="thumb-3" class="aspect-[4/3] rounded-xl bg-zinc-800/80 border border-dashed border-zinc-700 flex items-center justify-center text-[11px] text-zinc-500 font-bold overflow-hidden">4</div>
+      </div>
+    </div>
+
+    <!-- Bottom Controls: Efek Lucu, Background Lucu & Tombol Shutter -->
+    <div class="bg-zinc-900 border-t border-zinc-800/90 px-4 pt-3 pb-6 rounded-t-3xl space-y-3">
+      
+      <!-- Tab Switcher: Efek Lucu vs Background Lucu -->
+      <div class="flex items-center justify-center gap-2">
+        <button onclick="switchControlTab('effects')" id="tabEffects" class="px-4 py-1.5 rounded-full text-xs font-bold bg-pink-500 text-white transition-all cursor-pointer">
+          ✨ Efek Lucu
+        </button>
+        <button onclick="switchControlTab('backgrounds')" id="tabBackgrounds" class="px-4 py-1.5 rounded-full text-xs font-bold bg-zinc-800 text-zinc-400 hover:text-white transition-all cursor-pointer">
+          🎨 Background Lucu
+        </button>
+      </div>
+
+      <!-- Horizontal List: Efek Lucu -->
+      <div id="panelEffects" class="flex items-center gap-2.5 overflow-x-auto no-scrollbar py-1">
+        <button onclick="setEffect('none')" data-effect="none" class="effect-btn shrink-0 px-3.5 py-2 rounded-2xl bg-pink-500/20 border border-pink-500 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer">
+          <span>🚫</span><span>Normal</span>
+        </button>
+        <button onclick="setEffect('bunny')" data-effect="bunny" class="effect-btn shrink-0 px-3.5 py-2 rounded-2xl bg-zinc-800 border border-zinc-700 text-zinc-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer">
+          <span>🐰</span><span>Kelinci Lucu</span>
+        </button>
+        <button onclick="setEffect('cat')" data-effect="cat" class="effect-btn shrink-0 px-3.5 py-2 rounded-2xl bg-zinc-800 border border-zinc-700 text-zinc-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer">
+          <span>🐱</span><span>Kucing Gemoy</span>
+        </button>
+        <button onclick="setEffect('heart_glasses')" data-effect="heart_glasses" class="effect-btn shrink-0 px-3.5 py-2 rounded-2xl bg-zinc-800 border border-zinc-700 text-zinc-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer">
+          <span>😍</span><span>Kacamata Love</span>
+        </button>
+        <button onclick="setEffect('thug_glasses')" data-effect="thug_glasses" class="effect-btn shrink-0 px-3.5 py-2 rounded-2xl bg-zinc-800 border border-zinc-700 text-zinc-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer">
+          <span>🕶️</span><span>Kacamata Pixel</span>
+        </button>
+        <button onclick="setEffect('crown')" data-effect="crown" class="effect-btn shrink-0 px-3.5 py-2 rounded-2xl bg-zinc-800 border border-zinc-700 text-zinc-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer">
+          <span>👑</span><span>Mahkota & Bling</span>
+        </button>
+        <button onclick="setEffect('korean_glow')" data-effect="korean_glow" class="effect-btn shrink-0 px-3.5 py-2 rounded-2xl bg-zinc-800 border border-zinc-700 text-zinc-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer">
+          <span>🌸</span><span>Korean Glow</span>
+        </button>
+      </div>
+
+      <!-- Horizontal List: Background & Frame Lucu -->
+      <div id="panelBackgrounds" class="hidden flex items-center gap-2.5 overflow-x-auto no-scrollbar py-1">
+        <button onclick="setBackground('none')" data-bg="none" class="bg-btn shrink-0 px-3.5 py-2 rounded-2xl bg-pink-500/20 border border-pink-500 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer">
+          <span>📷</span><span>Asli</span>
+        </button>
+        <button onclick="setBackground('pastel_sky')" data-bg="pastel_sky" class="bg-btn shrink-0 px-3.5 py-2 rounded-2xl bg-zinc-800 border border-zinc-700 text-zinc-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer">
+          <span>🌈</span><span>Awan Pelangi</span>
+        </button>
+        <button onclick="setBackground('sakura')" data-bg="sakura" class="bg-btn shrink-0 px-3.5 py-2 rounded-2xl bg-zinc-800 border border-zinc-700 text-zinc-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer">
+          <span>🌸</span><span>Taman Sakura</span>
+        </button>
+        <button onclick="setBackground('galaxy')" data-bg="galaxy" class="bg-btn shrink-0 px-3.5 py-2 rounded-2xl bg-zinc-800 border border-zinc-700 text-zinc-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer">
+          <span>🚀</span><span>Luar Angkasa</span>
+        </button>
+        <button onclick="setBackground('cafe_paris')" data-bg="cafe_paris" class="bg-btn shrink-0 px-3.5 py-2 rounded-2xl bg-zinc-800 border border-zinc-700 text-zinc-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer">
+          <span>🥐</span><span>Cafe Aesthetic</span>
+        </button>
+        <button onclick="setBackground('y2k_hearts')" data-bg="y2k_hearts" class="bg-btn shrink-0 px-3.5 py-2 rounded-2xl bg-zinc-800 border border-zinc-700 text-zinc-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer">
+          <span>💖</span><span>Studio Love Y2K</span>
+        </button>
+      </div>
+
+      <!-- Shutter Row -->
+      <div class="flex items-center justify-between pt-1 px-2">
+        <!-- Reset Pose Button -->
+        <button onclick="resetCaptures()" class="w-11 h-11 rounded-full bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center text-zinc-300 text-sm cursor-pointer" title="Ulangi dari awal">
+          <i class="fa-solid fa-rotate-left"></i>
+        </button>
+
+        <!-- Main Shutter Button -->
+        <button id="btnShutter" onclick="startPhotoSequence()" class="relative w-18 h-18 rounded-full bg-white p-1.5 shadow-lg shadow-pink-500/20 active:scale-90 transition-transform cursor-pointer">
+          <div class="w-14 h-14 rounded-full border-4 border-zinc-900 bg-gradient-to-tr from-pink-500 to-rose-400 flex items-center justify-center">
+            <i class="fa-solid fa-camera text-white text-lg"></i>
+          </div>
+        </button>
+
+        <!-- Timer Toggle (3s / Auto 4x) -->
+        <button onclick="toggleAutoMode()" id="btnAutoMode" class="px-3 py-2 rounded-full bg-zinc-800 hover:bg-zinc-700 text-[11px] font-bold text-pink-300 border border-zinc-700 cursor-pointer">
+          Auto 4x
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== VIEW 3: HASIL PHOTOSTRIP (인생네컷) ==================== -->
+  <section id="viewResult" class="hidden flex-1 flex flex-col items-center justify-between px-4 py-6 max-w-md mx-auto w-full bg-[#F7F7F8]">
+    
+    <div class="w-full flex items-center justify-between mb-3">
+      <button onclick="retakeAll()" class="px-3.5 py-2 rounded-full bg-white border border-zinc-200 text-xs font-bold text-zinc-700 hover:bg-zinc-100 flex items-center gap-1.5 shadow-2xs cursor-pointer">
+        <i class="fa-solid fa-camera-rotate"></i>
+        <span>Foto Ulang</span>
+      </button>
+      <span class="bg-[#FCE4EC] text-[#4A2532] px-3 py-1 rounded-full text-xs font-bold">
+        인생네컷 · Selesai!
+      </span>
+      <button onclick="exitBooth()" class="px-3.5 py-2 rounded-full bg-white border border-zinc-200 text-xs font-bold text-zinc-700 hover:bg-zinc-100 shadow-2xs cursor-pointer">
+        Beranda
+      </button>
+    </div>
+
+    <!-- Preview Hasil Final Photostrip -->
+    <div class="my-2 flex flex-col items-center justify-center w-full">
+      <canvas id="finalStripCanvas" class="max-h-[54vh] w-auto rounded-xl shadow-2xl border border-zinc-200"></canvas>
+    </div>
+
+    <!-- Customizer Warna Frame & Caption -->
+    <div class="w-full bg-white rounded-3xl p-4 border border-zinc-200/80 shadow-sm space-y-3 mt-2">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold text-zinc-600">Warna Bingkai Strip:</span>
+        <div class="flex items-center gap-2">
+          <button onclick="setStripTheme('black')" class="w-7 h-7 rounded-full bg-[#18181B] ring-2 ring-offset-2 ring-zinc-900 cursor-pointer" title="Classic Black"></button>
+          <button onclick="setStripTheme('pink')" class="w-7 h-7 rounded-full bg-[#F8BBD0] border border-pink-300 cursor-pointer" title="Pastel Pink"></button>
+          <button onclick="setStripTheme('cream')" class="w-7 h-7 rounded-full bg-[#FDF6E3] border border-amber-200 cursor-pointer" title="Warm Cream"></button>
+          <button onclick="setStripTheme('lavender')" class="w-7 h-7 rounded-full bg-[#E1BEE7] border border-purple-300 cursor-pointer" title="Soft Lavender"></button>
+          <button onclick="setStripTheme('sky')" class="w-7 h-7 rounded-full bg-[#BBDEFB] border border-blue-300 cursor-pointer" title="Baby Blue"></button>
+        </div>
+      </div>
+
+      <!-- Custom Teks Bawah Strip -->
+      <div class="flex items-center gap-2">
+        <input type="text" id="stripCaptionInput" maxlength="28" value="인생네컷 · Together Forever 💕" oninput="renderFinalStrip()" class="flex-1 bg-zinc-100 border border-zinc-200 rounded-xl px-3 py-2 text-xs font-semibold text-zinc-800 focus:outline-none focus:border-pink-400" placeholder="Tulis caption lucu..." />
+      </div>
+
+      <!-- Action Buttons: Download & Share ke Medsos -->
+      <div class="grid grid-cols-2 gap-2.5 pt-1">
+        <button onclick="downloadStripPNG()" class="bg-[#18181B] hover:bg-zinc-800 text-white font-bold text-xs py-3.5 px-4 rounded-2xl flex items-center justify-center gap-2 shadow-md cursor-pointer">
+          <i class="fa-solid fa-download"></i>
+          <span>Simpan Foto</span>
+        </button>
+        <button onclick="shareResultImage()" class="bg-gradient-to-r from-pink-500 to-rose-500 hover:opacity-95 text-white font-bold text-xs py-3.5 px-4 rounded-2xl flex items-center justify-center gap-2 shadow-md shadow-pink-500/20 cursor-pointer">
+          <i class="fa-solid fa-share-nodes"></i>
+          <span>Bagikan Hasil</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== MODAL 1: SHARE & INVITE LINK (WA, IG, FB, DLL) ==================== -->
+  <div id="shareModal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-3xl p-6 text-zinc-900 shadow-2xl animate-[fadeIn_0.2s_ease-out]">
+      <div class="flex items-center justify-between mb-3">
+        <span class="bg-pink-100 text-pink-700 text-[11px] font-bold px-3 py-1 rounded-full">
+          💌 Undang Pasangan / Teman
+        </span>
+        <button onclick="closeShareModal()" class="w-8 h-8 rounded-full bg-zinc-100 hover:bg-zinc-200 flex items-center justify-center text-zinc-500 cursor-pointer">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <h3 class="text-xl font-extrabold text-zinc-900">Foto Bareng Online!</h3>
+      <p class="text-xs text-zinc-500 mt-1 leading-relaxed">
+        Kirim kode atau link undangan di bawah ini ke pasanganmu. Saat mereka membuka link, kalian akan langsung terhubung dalam satu bingkai photobooth!
+      </p>
+
+      <!-- Kotak Kode Ruangan -->
+      <div class="mt-4 bg-zinc-100 border border-zinc-200 rounded-2xl p-3.5 flex items-center justify-between">
+        <div>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block">Kode Ruangan</span>
+          <span id="modalRoomCodeText" class="text-2xl font-black tracking-widest text-zinc-900">LOVE88</span>
+        </div>
+        <button onclick="copyRoomCode()" class="px-3.5 py-2 rounded-xl bg-white border border-zinc-200 hover:bg-zinc-50 text-xs font-bold text-zinc-800 shadow-2xs flex items-center gap-1.5 cursor-pointer">
+          <i class="fa-regular fa-copy"></i>
+          <span>Salin Kode</span>
+        </button>
+      </div>
+
+      <!-- Kotak Link Undangan -->
+      <div class="mt-2.5 bg-zinc-100 border border-zinc-200 rounded-2xl p-2.5 flex items-center gap-2">
+        <input id="inviteLinkInput" type="text" readonly class="flex-1 bg-transparent text-xs text-zinc-600 font-medium focus:outline-none px-1" value="https://photobooth.app/?room=LOVE88" />
+        <button onclick="copyInviteLink()" class="px-3.5 py-2 rounded-xl bg-[#18181B] text-white text-xs font-bold hover:bg-zinc-800 shrink-0 cursor-pointer">
+          Salin Link
+        </button>
+      </div>
+
+      <!-- Grid Tombol Share Sosial Media (WA, IG, FB, Kontak/Lainnya) -->
+      <div class="mt-5">
+        <p class="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-3">Bagikan Langsung Ke:</p>
+        <div class="grid grid-cols-4 gap-2.5 text-center">
+          <!-- WhatsApp -->
+          <button onclick="shareToWhatsApp()" class="flex flex-col items-center gap-1.5 group cursor-pointer">
+            <div class="w-13 h-13 rounded-2xl bg-[#25D366]/15 group-hover:bg-[#25D366]/25 text-[#128C7E] flex items-center justify-center text-2xl transition-all">
+              <i class="fa-brands fa-whatsapp"></i>
+            </div>
+            <span class="text-[11px] font-bold text-zinc-700">WhatsApp</span>
+          </button>
+
+          <!-- Instagram -->
+          <button onclick="shareToInstagram()" class="flex flex-col items-center gap-1.5 group cursor-pointer">
+            <div class="w-13 h-13 rounded-2xl bg-gradient-to-tr from-amber-500/15 via-pink-500/15 to-purple-600/15 group-hover:opacity-80 text-pink-600 flex items-center justify-center text-2xl transition-all">
+              <i class="fa-brands fa-instagram"></i>
+            </div>
+            <span class="text-[11px] font-bold text-zinc-700">Instagram</span>
+          </button>
+
+          <!-- Facebook -->
+          <button onclick="shareToFacebook()" class="flex flex-col items-center gap-1.5 group cursor-pointer">
+            <div class="w-13 h-13 rounded-2xl bg-[#1877F2]/15 group-hover:bg-[#1877F2]/25 text-[#1877F2] flex items-center justify-center text-2xl transition-all">
+              <i class="fa-brands fa-facebook"></i>
+            </div>
+            <span class="text-[11px] font-bold text-zinc-700">Facebook</span>
+          </button>
+
+          <!-- Kontak / Lainnya (Web Share API) -->
+          <button onclick="shareNative()" class="flex flex-col items-center gap-1.5 group cursor-pointer">
+            <div class="w-13 h-13 rounded-2xl bg-zinc-100 group-hover:bg-zinc-200 text-zinc-800 flex items-center justify-center text-xl transition-all">
+              <i class="fa-solid fa-address-book"></i>
+            </div>
+            <span class="text-[11px] font-bold text-zinc-700">Kontak / Lain</span>
+          </button>
+        </div>
+      </div>
+
+      <button onclick="closeShareModal()" class="mt-6 w-full py-3.5 rounded-2xl bg-[#18181B] text-white font-bold text-sm hover:bg-zinc-800 cursor-pointer">
+        Mulai Foto Sekarang
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 2: GABUNG KE RUANGAN (INPUT KODE) ==================== -->
+  <div id="joinModal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-3xl p-6 text-zinc-900 shadow-2xl">
+      <div class="flex items-center justify-between mb-3">
+        <span class="bg-zinc-100 text-zinc-700 text-[11px] font-bold px-3 py-1 rounded-full">
+          🔑 Masuk Ruangan
+        </span>
+        <button onclick="closeJoinModal()" class="w-8 h-8 rounded-full bg-zinc-100 hover:bg-zinc-200 flex items-center justify-center text-zinc-500 cursor-pointer">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <h3 class="text-xl font-extrabold text-zinc-900">Gabung dengan Kode</h3>
+      <p class="text-xs text-zinc-500 mt-1">
+        Masukkan 6 huruf/angka kode ruangan yang dibagikan oleh pasangan atau temanmu.
+      </p>
+
+      <div class="mt-4">
+        <input id="joinCodeInput" type="text" maxlength="6" placeholder="CONTOH: A7K9P2" class="w-full text-center uppercase tracking-[0.25em] text-2xl font-black bg-zinc-100 border-2 border-zinc-200 focus:border-pink-500 rounded-2xl py-4 px-4 focus:outline-none" />
+      </div>
+
+      <button onclick="submitJoinRoom()" class="mt-4 w-full py-4 rounded-2xl bg-[#18181B] hover:bg-zinc-800 text-white font-bold text-sm shadow-lg cursor-pointer">
+        Gabung ke Ruangan
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== FIREBASE & APP LOGIC ==================== -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // --- State Global Aplikasi ---
+    const state = {
+      mode: 'solo', // 'solo' | 'duo_local' | 'group4' | 'online_host' | 'online_guest'
+      roomCode: null,
+      role: 'host', // 'host' | 'guest'
+      userId: null,
+      db: null,
+      auth: null,
+      appId: typeof __app_id !== 'undefined' ? __app_id : 'korean-photobooth-app',
+      unsubscribeRoom: null,
+      partnerConnected: false,
+      botPartnerActive: false,
+
+      // Kamera & Efek
+      stream: null,
+      facingMode: 'user',
+      mirrored: true,
+      currentEffect: 'none',
+      currentBg: 'none',
+      autoMode: true,
+      totalPoses: 4,
+      currentPoseIndex: 0,
+      isCountingDown: false,
+
+      // Hasil Foto (Base64 data URLs)
+      myPhotos: [],
+      partnerPhotos: [],
+      stripTheme: 'black',
+
+      // Segmentation
+      segmenter: null,
+      latestMask: null
+    };
+
+    // --- Inisialisasi Firebase (Untuk Sinkronisasi Ruangan Online Real-Time) ---
+    async function initFirebase() {
+      try {
+        if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+          const firebaseConfig = JSON.parse(__firebase_config);
+          const app = initializeApp(firebaseConfig);
+          state.db = getFirestore(app);
+          state.auth = getAuth(app);
+
+          if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+            await signInWithCustomToken(state.auth, __initial_auth_token);
+          } else {
+            await signInAnonymously(state.auth);
+          }
+          state.userId = state.auth.currentUser?.uid || ('user_' + Math.random().toString(36).slice(2, 9));
+        }
+      } catch (err) {
+        console.warn("Mode offline/lokal aktif:", err);
+      }
+    }
+
+    // --- Cek URL Parameter (?room=XXXXXX) saat halaman dibuka ---
+    window.addEventListener('DOMContentLoaded', async () => {
+      await initFirebase();
+      initSelfieSegmentation();
+
+      const params = new URLSearchParams(window.location.search);
+      const invitedRoom = params.get('room');
+      if (invitedRoom && invitedRoom.trim().length >= 4) {
+        const cleanCode = invitedRoom.trim().toUpperCase().slice(0, 6);
+        showToast(`Undangan ruangan #${cleanCode} terdeteksi! Menghubungkan...`, 'pink');
+        await joinOnlineRoomByCode(cleanCode);
+      }
+    });
+
+    // --- MediaPipe Selfie Segmentation (Untuk Virtual Background Halus) ---
+    function initSelfieSegmentation() {
+      try {
+        if (typeof SelfieSegmentation !== 'undefined') {
+          const segmenter = new SelfieSegmentation({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`
+          });
+          segmenter.setOptions({ modelSelection: 1, selfieMode: false });
+          segmenter.onResults((results) => {
+            state.latestMask = results.segmentationMask;
+          });
+          state.segmenter = segmenter;
+        }
+      } catch (e) {
+        console.warn("Segmentation fallback ke frame mode:", e);
+      }
+    }
+
+    // --- Helper Toast Message ---
+    window.showToast = function(msg, type = 'dark') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      const bgClass = type === 'pink' ? 'bg-pink-600 text-white' : 'bg-zinc-900 text-white border border-zinc-700';
+      toast.className = `${bgClass} px-4 py-3 rounded-2xl shadow-xl text-xs font-bold text-center transition-all duration-300 transform translate-y-0`;
+      toast.textContent = msg;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-10px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 2800);
+    };
+
+    // --- Generate 6-Char Room Code ---
+    function generateRoomCode() {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let code = '';
+      for (let i = 0; i < 6; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return code;
+    }
+
+    function buildInviteUrl(code) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('room', code);
+      return url.toString();
+    }
+
+    // --- Buat Ruangan Online Baru (Host) ---
+    window.createOnlineRoom = async function() {
+      const code = generateRoomCode();
+      state.mode = 'online_host';
+      state.role = 'host';
+      state.roomCode = code;
+      state.partnerConnected = false;
+      state.myPhotos = [];
+      state.partnerPhotos = [];
+      state.currentPoseIndex = 0;
+
+      // Simpan state ruangan ke Firestore jika tersedia
+      if (state.db && state.userId) {
+        try {
+          const roomRef = doc(state.db, 'artifacts', state.appId, 'public', 'data', 'photobooth_rooms', code);
+          await setDoc(roomRef, {
+            roomCode: code,
+            hostId: state.userId,
+            guestId: null,
+            status: 'waiting',
+            countdownTrigger: 0,
+            hostPhotos: JSON.stringify([]),
+            guestPhotos: JSON.stringify([]),
+            hostPreview: '',
+            guestPreview: '',
+            createdAt: Date.now()
+          });
+          listenToRoomChanges(code);
+        } catch (e) {
+          console.warn("Firestore room creation fallback:", e);
+        }
+      }
+
+      enterBoothUI();
+      openShareModal();
+    };
+
+    // --- Gabung ke Ruangan Online (Guest) ---
+    window.openJoinModal = function() {
+      document.getElementById('joinModal').classList.remove('hidden');
+      document.getElementById('joinCodeInput').focus();
+    };
+
+    window.closeJoinModal = function() {
+      document.getElementById('joinModal').classList.add('hidden');
+    };
+
+    window.submitJoinRoom = async function() {
+      const raw = document.getElementById('joinCodeInput').value.trim().toUpperCase();
+      if (raw.length < 4) {
+        showToast('Masukkan kode ruangan yang valid (6 karakter)!', 'pink');
+        return;
+      }
+      closeJoinModal();
+      await joinOnlineRoomByCode(raw);
+    };
+
+    async function joinOnlineRoomByCode(code) {
+      state.mode = 'online_guest';
+      state.role = 'guest';
+      state.roomCode = code;
+      state.partnerConnected = true;
+      state.myPhotos = [];
+      state.partnerPhotos = [];
+      state.currentPoseIndex = 0;
+
+      if (state.db && state.userId) {
+        try {
+          const roomRef = doc(state.db, 'artifacts', state.appId, 'public', 'data', 'photobooth_rooms', code);
+          const snap = await getDoc(roomRef);
+          if (snap.exists()) {
+            await updateDoc(roomRef, {
+              guestId: state.userId,
+              status: 'connected'
+            });
+          } else {
+            // Jika ruangan belum ada, buat otomatis agar link tetap jalan mulus
+            await setDoc(roomRef, {
+              roomCode: code,
+              hostId: 'remote_host',
+              guestId: state.userId,
+              status: 'connected',
+              countdownTrigger: 0,
+              hostPhotos: JSON.stringify([]),
+              guestPhotos: JSON.stringify([]),
+              hostPreview: '',
+              guestPreview: '',
+              createdAt: Date.now()
+            });
+          }
+          listenToRoomChanges(code);
+        } catch (e) {
+          console.warn("Join room firestore fallback:", e);
+        }
+      }
+
+      enterBoothUI();
+      updatePartnerUI(true, 'Terhubung dengan Host! 💕');
+      showToast(`Berhasil bergabung ke ruangan #${code}!`, 'pink');
+    }
+
+    // --- Real-time Listener Firestore untuk Sinkronisasi Dua Perangkat ---
+    let lastTriggerHandled = 0;
+    function listenToRoomChanges(code) {
+      if (!state.db) return;
+      if (state.unsubscribeRoom) state.unsubscribeRoom();
+
+      const roomRef = doc(state.db, 'artifacts', state.appId, 'public', 'data', 'photobooth_rooms', code);
+      state.unsubscribeRoom = onSnapshot(roomRef, (docSnap) => {
+        if (!docSnap.exists()) return;
+        const data = docSnap.data();
+
+        // Cek status koneksi pasangan
+        if (state.role === 'host' && data.guestId) {
+          if (!state.partnerConnected) {
+            state.partnerConnected = true;
+            closeShareModal();
+            showToast('Pasanganmu telah bergabung ke ruangan! 🎉', 'pink');
+          }
+          updatePartnerUI(true, 'Pasangan Terhubung! Siap foto bareng 💕');
+        }
+
+        // Update Live Preview Gambar Pasangan
+        const partnerPreviewData = state.role === 'host' ? data.guestPreview : data.hostPreview;
+        if (partnerPreviewData) {
+          const imgEl = document.getElementById('partnerLivePreviewImg');
+          const waitEl = document.getElementById('partnerWaitingPlaceholder');
+          imgEl.src = partnerPreviewData;
+          imgEl.classList.remove('hidden');
+          waitEl.classList.add('hidden');
+        }
+
+        // Sinkronisasi Foto Hasil Jepretan Pasangan
+        try {
+          const remotePhotos = JSON.parse(state.role === 'host' ? (data.guestPhotos || '[]') : (data.hostPhotos || '[]'));
+          if (Array.isArray(remotePhotos) && remotePhotos.length > 0) {
+            state.partnerPhotos = remotePhotos;
+            if (state.myPhotos.length >= state.totalPoses && state.partnerPhotos.length >= state.totalPoses) {
+              showResultView();
+            }
+          }
+        } catch (e) {}
+
+        // Sinkronisasi Countdown Bersama
+        if (data.countdownTrigger && data.countdownTrigger > lastTriggerHandled && !state.isCountingDown) {
+          lastTriggerHandled = data.countdownTrigger;
+          runLocalCountdownAndCapture();
+        }
+      }, (err) => {
+        console.warn("Snapshot error:", err);
+      });
+    }
+
+    // --- Mode Lokal (Hanya Aku / Teman Satu Kamera / Kelompok 4) ---
+    window.startLocalMode = function(mode) {
+      state.mode = mode;
+      state.role = 'host';
+      state.roomCode = null;
+      state.myPhotos = [];
+      state.partnerPhotos = [];
+      state.currentPoseIndex = 0;
+      enterBoothUI();
+    };
+
+    // --- Masuk ke Tampilan Kamera Studio ---
+    async function enterBoothUI() {
+      document.getElementById('viewHome').classList.add('hidden');
+      document.getElementById('viewResult').classList.add('hidden');
+      document.getElementById('viewBooth').classList.remove('hidden');
+
+      const isOnline = state.mode === 'online_host' || state.mode === 'online_guest';
+      const badge = document.getElementById('roomCodeBadge');
+      const dot = document.getElementById('connectionDot');
+      const banner = document.getElementById('partnerBanner');
+      const partnerSlot = document.getElementById('partnerLiveSlot');
+      const dualGrid = document.getElementById('dualCameraGrid');
+      const inviteBtn = document.getElementById('btnOpenShareModal');
+
+      if (isOnline) {
+        badge.textContent = `ROOM #${state.roomCode}`;
+        dot.className = 'w-2 h-2 rounded-full bg-emerald-400 online-dot';
+        banner.classList.remove('hidden');
+        partnerSlot.classList.remove('hidden');
+        dualGrid.className = 'grid grid-cols-2 gap-1 bg-zinc-950';
+        inviteBtn.classList.remove('hidden');
+      } else {
+        const labels = {
+          solo: 'MODE SOLO · 1 ORANG',
+          duo_local: 'TEMAN SATU KAMERA',
+          group4: 'KELOMPOK 4 · SERU'
+        };
+        badge.textContent = labels[state.mode] || 'PHOTOBOOTH';
+        dot.className = 'w-2 h-2 rounded-full bg-pink-400';
+        banner.classList.add('hidden');
+        partnerSlot.classList.add('hidden');
+        dualGrid.className = 'grid grid-cols-1 gap-1 bg-zinc-950';
+        inviteBtn.classList.add('hidden');
+      }
+
+      resetCaptures();
+      await startCamera();
+    }
+
+    window.exitBooth = function() {
+      stopCamera();
+      if (state.unsubscribeRoom) state.unsubscribeRoom();
+      document.getElementById('viewBooth').classList.add('hidden');
+      document.getElementById('viewResult').classList.add('hidden');
+      document.getElementById('viewHome').classList.remove('hidden');
+    };
+
+    function updatePartnerUI(connected, titleText) {
+      document.getElementById('partnerStatusIcon').textContent = connected ? '💖' : '⏳';
+      document.getElementById('partnerStatusTitle').textContent = titleText;
+      document.getElementById('partnerStatusSub').textContent = connected
+        ? 'Tekan tombol foto, kalian akan dijepret bersamaan!'
+        : 'Bagikan link undangan ke WA, IG, atau FB';
+    }
+
+    // --- Bot AI Partner Simulasi (Jika user ingin mengetes mode 2 orang sendirian) ---
+    window.toggleBotPartner = function() {
+      state.botPartnerActive = !state.botPartnerActive;
+      const btn = document.getElementById('btnSimPartner');
+      if (state.botPartnerActive) {
+        state.partnerConnected = true;
+        btn.textContent = 'Matikan Bot';
+        btn.classList.add('bg-pink-500');
+        updatePartnerUI(true, 'Mode Simulasi Pasangan AI Aktif 🤖💕');
+        document.getElementById('partnerWaitingPlaceholder').innerHTML = `
+          <div class="text-4xl mb-1 animate-bounce">🧸✨</div>
+          <p class="text-xs font-bold text-pink-300">Pasangan Virtual Siap!</p>
+          <p class="text-[10px] text-zinc-400">Akan ikut berpose otomatis saat dijepret</p>
+        `;
+        showToast('Pasangan virtual aktif! Sekarang coba jepret foto.', 'pink');
+      } else {
+        state.partnerConnected = false;
+        btn.textContent = 'Tes Bot AI 🤖';
+        btn.classList.remove('bg-pink-500');
+        updatePartnerUI(false, 'Menunggu pasangan bergabung...');
+      }
+    };
+
+    // --- Modal Share & Undangan (WA, IG, FB, Kontak) ---
+    window.openShareModal = function() {
+      const code = state.roomCode || generateRoomCode();
+      state.roomCode = code;
+      const link = buildInviteUrl(code);
+      document.getElementById('modalRoomCodeText').textContent = code;
+      document.getElementById('inviteLinkInput').value = link;
+      document.getElementById('shareModal').classList.remove('hidden');
+    };
+
+    window.closeShareModal = function() {
+      document.getElementById('shareModal').classList.add('hidden');
+    };
+
+    function copyTextFallback(text) {
+      const temp = document.createElement('textarea');
+      temp.value = text;
+      document.body.appendChild(temp);
+      temp.select();
+      document.execCommand('copy');
+      document.body.removeChild(temp);
+    }
+
+    window.copyRoomCode = function() {
+      copyTextFallback(state.roomCode);
+      showToast(`Kode ruangan ${state.roomCode} disalin!`, 'pink');
+    };
+
+    window.copyInviteLink = function() {
+      const link = document.getElementById('inviteLinkInput').value;
+      copyTextFallback(link);
+      showToast('Link undangan berhasil disalin! Siap ditempel.', 'pink');
+    };
+
+    window.shareToWhatsApp = function() {
+      const link = document.getElementById('inviteLinkInput').value;
+      const text = `Yuk foto bareng di Photobooth Online (인생네컷)! 📸✨ Klik link ini buat gabung ke ruanganku (Kode: ${state.roomCode}): ${link}`;
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+    };
+
+    window.shareToInstagram = function() {
+      const link = document.getElementById('inviteLinkInput').value;
+      copyTextFallback(link);
+      showToast('Link disalin! Membuka Instagram, tempel di DM/Story kamu 💕', 'pink');
+      setTimeout(() => {
+        window.open('https://www.instagram.com/direct/inbox/', '_blank');
+      }, 700);
+    };
+
+    window.shareToFacebook = function() {
+      const link = document.getElementById('inviteLinkInput').value;
+      window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`, '_blank');
+    };
+
+    window.shareNative = async function() {
+      const link = document.getElementById('inviteLinkInput').value;
+      const shareData = {
+        title: 'Photobooth Online — 인생네컷',
+        text: `Ayo foto photobooth bareng aku! Kode ruangan: ${state.roomCode}`,
+        url: link
+      };
+      if (navigator.share) {
+        try {
+          await navigator.share(shareData);
+        } catch (err) {}
+      } else {
+        copyTextFallback(link);
+        showToast('Link undangan disalin ke clipboard!', 'pink');
+      }
+    };
+
+    // ==================== KAMERA, EFEK LUCU & BACKGROUND ====================
+    let renderAnimId = null;
+    let lastPreviewSyncTime = 0;
+
+    async function startCamera() {
+      stopCamera();
+      const video = document.getElementById('webcamVideo');
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: state.facingMode, width: { ideal: 640 }, height: { ideal: 480 } },
+          audio: false
+        });
+        state.stream = stream;
+        video.srcObject = stream;
+        await video.play();
+        startLiveCanvasLoop();
+      } catch (err) {
+        showToast('Izin kamera diperlukan atau perangkat tidak memiliki kamera.', 'pink');
+        startFallbackAvatarLoop();
+      }
+    }
+
+    function stopCamera() {
+      if (renderAnimId) cancelAnimationFrame(renderAnimId);
+      if (state.stream) {
+        state.stream.getTracks().forEach(t => t.stop());
+        state.stream = null;
+      }
+    }
+
+    window.switchCamera = async function() {
+      state.facingMode = state.facingMode === 'user' ? 'environment' : 'user';
+      state.mirrored = state.facingMode === 'user';
+      await startCamera();
+    };
+
+    window.toggleMirror = function() {
+      state.mirrored = !state.mirrored;
+      showToast(state.mirrored ? 'Kamera dicerminkan' : 'Kamera normal');
+    };
+
+    window.switchControlTab = function(tab) {
+      const tabEff = document.getElementById('tabEffects');
+      const tabBg = document.getElementById('tabBackgrounds');
+      const panelEff = document.getElementById('panelEffects');
+      const panelBg = document.getElementById('panelBackgrounds');
+
+      if (tab === 'effects') {
+        tabEff.className = 'px-4 py-1.5 rounded-full text-xs font-bold bg-pink-500 text-white transition-all cursor-pointer';
+        tabBg.className = 'px-4 py-1.5 rounded-full text-xs font-bold bg-zinc-800 text-zinc-400 hover:text-white transition-all cursor-pointer';
+        panelEff.classList.remove('hidden');
+        panelBg.classList.add('hidden');
+      } else {
+        tabBg.className = 'px-4 py-1.5 rounded-full text-xs font-bold bg-pink-500 text-white transition-all cursor-pointer';
+        tabEff.className = 'px-4 py-1.5 rounded-full text-xs font-bold bg-zinc-800 text-zinc-400 hover:text-white transition-all cursor-pointer';
+        panelBg.classList.remove('hidden');
+        panelEff.classList.add('hidden');
+      }
+    };
+
+    window.setEffect = function(eff) {
+      state.currentEffect = eff;
+      document.querySelectorAll('.effect-btn').forEach(btn => {
+        if (btn.dataset.effect === eff) {
+          btn.className = 'effect-btn shrink-0 px-3.5 py-2 rounded-2xl bg-pink-500/20 border border-pink-500 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer';
+        } else {
+          btn.className = 'effect-btn shrink-0 px-3.5 py-2 rounded-2xl bg-zinc-800 border border-zinc-700 text-zinc-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer';
+        }
+      });
+    };
+
+    window.setBackground = function(bg) {
+      state.currentBg = bg;
+      document.querySelectorAll('.bg-btn').forEach(btn => {
+        if (btn.dataset.bg === bg) {
+          btn.className = 'bg-btn shrink-0 px-3.5 py-2 rounded-2xl bg-pink-500/20 border border-pink-500 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer';
+        } else {
+          btn.className = 'bg-btn shrink-0 px-3.5 py-2 rounded-2xl bg-zinc-800 border border-zinc-700 text-zinc-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer';
+        }
+      });
+    };
+
+    // --- Render Loop Utama Live Canvas (Video + Background Lucu + Efek Lucu) ---
+    const offscreenPersonCanvas = document.createElement('canvas');
+    const offscreenPersonCtx = offscreenPersonCanvas.getContext('2d');
+
+    function startLiveCanvasLoop() {
+      const video = document.getElementById('webcamVideo');
+      const canvas = document.getElementById('liveCanvas');
+      const ctx = canvas.getContext('2d');
+
+      let frameTick = 0;
+
+      async function renderFrame() {
+        frameTick++;
+        if (video.readyState >= 2) {
+          const w = 640;
+          const h = 480;
+          if (canvas.width !== w) {
+            canvas.width = w;
+            canvas.height = h;
+            offscreenPersonCanvas.width = w;
+            offscreenPersonCanvas.height = h;
+          }
+
+          // Kirim frame ke segmenter tiap beberapa frame jika background aktif
+          if (state.currentBg !== 'none' && state.segmenter && frameTick % 2 === 0) {
+            try { await state.segmenter.send({ image: video }); } catch (e) {}
+          }
+
+          ctx.save();
+          ctx.clearRect(0, 0, w, h);
+
+          // 1. Gambar Background Lucu (Jika dipilih)
+          if (state.currentBg !== 'none') {
+            drawCuteBackground(ctx, w, h, state.currentBg, frameTick);
+          }
+
+          // 2. Gambar Video User (Dengan Segmentasi jika ada mask, atau Vignette/Frame Cutout)
+          if (state.currentBg !== 'none' && state.latestMask) {
+            offscreenPersonCtx.save();
+            offscreenPersonCtx.clearRect(0, 0, w, h);
+            if (state.mirrored) {
+              offscreenPersonCtx.translate(w, 0);
+              offscreenPersonCtx.scale(-1, 1);
+            }
+            // Filter warna Korean Glow jika aktif
+            if (state.currentEffect === 'korean_glow') {
+              offscreenPersonCtx.filter = 'brightness(1.08) contrast(1.03) saturate(1.15)';
+            }
+            offscreenPersonCtx.drawImage(video, 0, 0, w, h);
+            offscreenPersonCtx.globalCompositeOperation = 'destination-in';
+            offscreenPersonCtx.drawImage(state.latestMask, 0, 0, w, h);
+            offscreenPersonCtx.restore();
+
+            ctx.drawImage(offscreenPersonCanvas, 0, 0, w, h);
+          } else {
+            ctx.save();
+            if (state.mirrored) {
+              ctx.translate(w, 0);
+              ctx.scale(-1, 1);
+            }
+            if (state.currentEffect === 'korean_glow') {
+              ctx.filter = 'brightness(1.09) contrast(1.04) saturate(1.18)';
+            }
+            if (state.currentBg !== 'none') {
+              // Fallback bingkai bulat aesthetic jika segmentasi belum siap
+              ctx.beginPath();
+              ctx.roundRect(45, 35, w - 90, h - 70, 48);
+              ctx.clip();
+            }
+            ctx.drawImage(video, 0, 0, w, h);
+            ctx.restore();
+          }
+
+          // 3. Gambar Dekorasi Foreground Background (Awan depan, kelopak sakura jatuh, dll)
+          if (state.currentBg !== 'none') {
+            drawCuteForegroundDecor(ctx, w, h, state.currentBg, frameTick);
+          }
+
+          // 4. Gambar Efek Lucu (Telinga Kelinci, Kacamata Love, Mahkota, Pipi Merona)
+          drawFunnyEffectOverlay(ctx, w, h, state.currentEffect, frameTick);
+
+          ctx.restore();
+
+          // Sinkronkan thumbnail live ke pasangan tiap 1.5 detik jika online
+          const now = Date.now();
+          if ((state.mode === 'online_host' || state.mode === 'online_guest') && state.db && now - lastPreviewSyncTime > 1600) {
+            lastPreviewSyncTime = now;
+            syncLivePreviewToPartner(canvas);
+          }
+        }
+        renderAnimId = requestAnimationFrame(renderFrame);
+      }
+
+      renderFrame();
+    }
+
+    // Fallback jika kamera tidak diizinkan (Avatar Lucu Interaktif agar tetap bisa dicoba)
+    function startFallbackAvatarLoop() {
+      const canvas = document.getElementById('liveCanvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = 640;
+      canvas.height = 480;
+      let tick = 0;
+
+      function drawDemo() {
+        tick++;
+        const w = 640, h = 480;
+        ctx.clearRect(0, 0, w, h);
+        drawCuteBackground(ctx, w, h, state.currentBg === 'none' ? 'pastel_sky' : state.currentBg, tick);
+
+        // Karakter Lucu Demo
+        const bob = Math.sin(tick * 0.06) * 6;
+        ctx.fillStyle = '#FFE0B2';
+        ctx.beginPath();
+        ctx.arc(w / 2, h / 2 + 25 + bob, 95, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Mata & Senyum
+        ctx.fillStyle = '#212121';
+        ctx.beginPath();
+        ctx.arc(w / 2 - 32, h / 2 + 15 + bob, 9, 0, Math.PI * 2);
+        ctx.arc(w / 2 + 32, h / 2 + 15 + bob, 9, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#E53935';
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.arc(w / 2, h / 2 + 42 + bob, 22, 0.15 * Math.PI, 0.85 * Math.PI);
+        ctx.stroke();
+
+        drawFunnyEffectOverlay(ctx, w, h, state.currentEffect, tick);
+        renderAnimId = requestAnimationFrame(drawDemo);
+      }
+      drawDemo();
+    }
+
+    async function syncLivePreviewToPartner(sourceCanvas) {
+      try {
+        const mini = document.createElement('canvas');
+        mini.width = 240;
+        mini.height = 180;
+        mini.getContext('2d').drawImage(sourceCanvas, 0, 0, 240, 180);
+        const dataUrl = mini.toDataURL('image/jpeg', 0.45);
+        const roomRef = doc(state.db, 'artifacts', state.appId, 'public', 'data', 'photobooth_rooms', state.roomCode);
+        const field = state.role === 'host' ? { hostPreview: dataUrl } : { guestPreview: dataUrl };
+        await updateDoc(roomRef, field);
+      } catch (e) {}
+    }
+
+    // --- Gambar Background Lucu ---
+    function drawCuteBackground(ctx, w, h, bgType, tick) {
+      if (bgType === 'pastel_sky') {
+        const grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, '#A1C4FD');
+        grad.addColorStop(0.55, '#FBC2EB');
+        grad.addColorStop(1, '#FFF1EB');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+
+        // Pelangi Pastel
+        const rainbowColors = ['#FF9AA2', '#FFB7B2', '#FFDAC1', '#E2F0CB', '#B5EAD7', '#C7CEEA'];
+        rainbowColors.forEach((col, idx) => {
+          ctx.strokeStyle = col;
+          ctx.lineWidth = 14;
+          ctx.beginPath();
+          ctx.arc(w / 2, h * 0.88, 250 - idx * 14, Math.PI, 0);
+          ctx.stroke();
+        });
+
+        // Awan Lucu
+        drawCloud(ctx, 110 + Math.sin(tick * 0.02) * 12, 95, 1.1);
+        drawCloud(ctx, 510 - Math.sin(tick * 0.02) * 12, 120, 0.9);
+      } else if (bgType === 'sakura') {
+        const grad = ctx.createLinearGradient(0, 0, w, h);
+        grad.addColorStop(0, '#FFD1DC');
+        grad.addColorStop(1, '#FFF0F5');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+
+        // Kelopak Sakura melayang
+        for (let i = 0; i < 18; i++) {
+          const px = ((i * 73 + tick * 1.4) % (w + 40)) - 20;
+          const py = ((i * 59 + tick * 1.8) % (h + 40)) - 20;
+          ctx.save();
+          ctx.translate(px, py);
+          ctx.rotate((tick * 0.03) + i);
+          ctx.fillStyle = i % 2 === 0 ? '#FF80AB' : '#F48FB1';
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 10, 5, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      } else if (bgType === 'galaxy') {
+        const grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, '#1A1A2E');
+        grad.addColorStop(0.5, '#302B63');
+        grad.addColorStop(1, '#24243E');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+
+        // Bintang berkelip
+        for (let i = 0; i < 28; i++) {
+          const sx = (i * 97) % w;
+          const sy = (i * 61) % h;
+          const r = (Math.sin(tick * 0.08 + i) + 1.5) * 1.8;
+          ctx.fillStyle = i % 3 === 0 ? '#FFE082' : '#FFFFFF';
+          ctx.beginPath();
+          ctx.arc(sx, sy, r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        // Planet Pastel
+        ctx.fillStyle = '#FFAB91';
+        ctx.beginPath();
+        ctx.arc(105, 95, 34, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#FFE082';
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.ellipse(105, 95, 56, 13, -0.3, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (bgType === 'cafe_paris') {
+        const grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, '#4E342E');
+        grad.addColorStop(1, '#8D6E63');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+
+        // Jendela Cafe Warm Sunset
+        ctx.fillStyle = '#FFE0B2';
+        ctx.beginPath();
+        ctx.roundRect(70, 40, w - 140, h - 80, 24);
+        ctx.fill();
+
+        // Siluet Menara Eiffel di kejauhan
+        ctx.strokeStyle = '#D7CCC8';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(w / 2, 85);
+        ctx.lineTo(w / 2 - 45, 360);
+        ctx.moveTo(w / 2, 85);
+        ctx.lineTo(w / 2 + 45, 360);
+        ctx.moveTo(w / 2 - 28, 240);
+        ctx.lineTo(w / 2 + 28, 240);
+        ctx.stroke();
+      } else if (bgType === 'y2k_hearts') {
+        ctx.fillStyle = '#FCE4EC';
+        ctx.fillRect(0, 0, w, h);
+        // Grid kotak-kotak Y2K
+        ctx.strokeStyle = '#F8BBD0';
+        ctx.lineWidth = 2;
+        for (let x = 0; x < w; x += 40) {
+          ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+        }
+        for (let y = 0; y < h; y += 40) {
+          ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+        }
+        ctx.font = '32px serif';
+        ctx.fillText('💖', 45, 75);
+        ctx.fillText('✨', w - 85, 80);
+        ctx.fillText('🧸', 50, h - 45);
+        ctx.fillText('🍓', w - 85, h - 45);
+      }
+    }
+
+    function drawCuteForegroundDecor(ctx, w, h, bgType, tick) {
+      if (bgType === 'pastel_sky') {
+        drawCloud(ctx, 80, h - 30, 1.25);
+        drawCloud(ctx, w - 90, h - 25, 1.25);
+      }
+    }
+
+    function drawCloud(ctx, cx, cy, scale) {
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.scale(scale, scale);
+      ctx.fillStyle = 'rgba(255,255,255,0.92)';
+      ctx.beginPath();
+      ctx.arc(0, 0, 26, 0, Math.PI * 2);
+      ctx.arc(24, -6, 30, 0, Math.PI * 2);
+      ctx.arc(52, 0, 24, 0, Math.PI * 2);
+      ctx.arc(-22, 4, 20, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // --- Gambar Efek Lucu di Wajah / Layar ---
+    function drawFunnyEffectOverlay(ctx, w, h, effect, tick) {
+      const cx = w / 2;
+      const headTopY = h * 0.16;
+      const eyeY = h * 0.43;
+      const cheekY = h * 0.54;
+      const bounce = Math.sin(tick * 0.08) * 4;
+
+      if (effect === 'bunny') {
+        // Telinga Kelinci Kiri & Kanan
+        drawBunnyEar(ctx, cx - 72, headTopY + bounce, -0.15);
+        drawBunnyEar(ctx, cx + 72, headTopY + bounce, 0.15);
+        // Hidung & Kumis Kelinci
+        ctx.fillStyle = '#FF80AB';
+        ctx.beginPath();
+        ctx.arc(cx, cheekY + 6, 10, 0, Math.PI * 2);
+        ctx.fill();
+        drawWhiskers(ctx, cx, cheekY + 10);
+      } else if (effect === 'cat') {
+        // Telinga Kucing Gemoy
+        drawCatEar(ctx, cx - 80, headTopY + 15 + bounce, -0.2);
+        drawCatEar(ctx, cx + 80, headTopY + 15 + bounce, 0.2);
+        drawBlush(ctx, cx, cheekY);
+        drawWhiskers(ctx, cx, cheekY + 8);
+      } else if (effect === 'heart_glasses') {
+        // Kacamata Love Pink Besar
+        ctx.font = '82px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('😍', cx, eyeY + 22 + bounce * 0.5);
+        // Frame Kacamata Heart
+        drawHeartShape(ctx, cx - 58, eyeY - 10, 44, '#FF1744');
+        drawHeartShape(ctx, cx + 58, eyeY - 10, 44, '#FF1744');
+        ctx.strokeStyle = '#FF80AB';
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.moveTo(cx - 20, eyeY - 5);
+        ctx.lineTo(cx + 20, eyeY - 5);
+        ctx.stroke();
+      } else if (effect === 'thug_glasses') {
+        // Kacamata Pixel Thug Life
+        ctx.fillStyle = '#111111';
+        ctx.fillRect(cx - 125, eyeY - 18, 250, 12);
+        ctx.fillRect(cx - 110, eyeY - 18, 92, 42);
+        ctx.fillRect(cx + 18, eyeY - 18, 92, 42);
+        // Kilau putih pixel
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(cx - 95, eyeY - 8, 12, 12);
+        ctx.fillRect(cx - 80, eyeY + 4, 12, 12);
+        ctx.fillRect(cx + 33, eyeY - 8, 12, 12);
+        ctx.fillRect(cx + 48, eyeY + 4, 12, 12);
+      } else if (effect === 'crown') {
+        // Mahkota Emas & Sparkles
+        ctx.save();
+        ctx.translate(cx, headTopY + 10 + bounce);
+        ctx.fillStyle = '#FFD54F';
+        ctx.strokeStyle = '#FFA000';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(-65, 35);
+        ctx.lineTo(-75, -20);
+        ctx.lineTo(-30, 10);
+        ctx.lineTo(0, -35);
+        ctx.lineTo(30, 10);
+        ctx.lineTo(75, -20);
+        ctx.lineTo(65, 35);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        // Permata
+        ctx.fillStyle = '#FF4081';
+        ctx.beginPath();
+        ctx.arc(0, 12, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        drawBlush(ctx, cx, cheekY);
+      } else if (effect === 'korean_glow') {
+        drawBlush(ctx, cx, cheekY);
+        ctx.font = '32px serif';
+        ctx.fillText('✨', cx - 140, eyeY - 30 + bounce);
+        ctx.fillText('🌸', cx + 115, eyeY - 25 - bounce);
+        ctx.fillText('💕', cx + 125, cheekY + 40);
+      }
+    }
+
+    function drawBunnyEar(ctx, x, y, angle) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.beginPath();
+      ctx.ellipse(0, -45, 24, 68, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#F8BBD0';
+      ctx.beginPath();
+      ctx.ellipse(0, -42, 13, 50, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawCatEar(ctx, x, y, angle) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.fillStyle = '#27272A';
+      ctx.beginPath();
+      ctx.moveTo(-36, 15);
+      ctx.lineTo(0, -55);
+      ctx.lineTo(36, 15);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#F48FB1';
+      ctx.beginPath();
+      ctx.moveTo(-20, 8);
+      ctx.lineTo(0, -35);
+      ctx.lineTo(20, 8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawBlush(ctx, cx, y) {
+      const gradL = ctx.createRadialGradient(cx - 88, y, 4, cx - 88, y, 34);
+      gradL.addColorStop(0, 'rgba(255, 105, 135, 0.55)');
+      gradL.addColorStop(1, 'rgba(255, 105, 135, 0)');
+      ctx.fillStyle = gradL;
+      ctx.beginPath();
+      ctx.arc(cx - 88, y, 34, 0, Math.PI * 2);
+      ctx.fill();
+
+      const gradR = ctx.createRadialGradient(cx + 88, y, 4, cx + 88, y, 34);
+      gradR.addColorStop(0, 'rgba(255, 105, 135, 0.55)');
+      gradR.addColorStop(1, 'rgba(255, 105, 135, 0)');
+      ctx.fillStyle = gradR;
+      ctx.beginPath();
+      ctx.arc(cx + 88, y, 34, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawWhiskers(ctx, cx, y) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+      ctx.lineWidth = 3.5;
+      ctx.lineCap = 'round';
+      // Kiri
+      ctx.beginPath(); ctx.moveTo(cx - 55, y - 6); ctx.lineTo(cx - 115, y - 16); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx - 55, y + 6); ctx.lineTo(cx - 115, y + 14); ctx.stroke();
+      // Kanan
+      ctx.beginPath(); ctx.moveTo(cx + 55, y - 6); ctx.lineTo(cx + 115, y - 16); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx + 55, y + 6); ctx.lineTo(cx + 115, y + 14); ctx.stroke();
+    }
+
+    function drawHeartShape(ctx, x, y, size, color) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      const topCurveHeight = size * 0.3;
+      ctx.moveTo(0, topCurveHeight);
+      ctx.bezierCurveTo(0, 0, -size / 2, 0, -size / 2, topCurveHeight);
+      ctx.bezierCurveTo(-size / 2, (size + topCurveHeight) / 2, 0, (size + topCurveHeight) / 1.4, 0, size);
+      ctx.bezierCurveTo(0, (size + topCurveHeight) / 1.4, size / 2, (size + topCurveHeight) / 2, size / 2, topCurveHeight);
+      ctx.bezierCurveTo(size / 2, 0, 0, 0, 0, topCurveHeight);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // ==================== PROSES PENGAMBILAN FOTO (4 POSE) ====================
+    window.toggleAutoMode = function() {
+      state.autoMode = !state.autoMode;
+      const btn = document.getElementById('btnAutoMode');
+      btn.textContent = state.autoMode ? 'Auto 4x' : 'Manual 1x';
+      showToast(state.autoMode ? 'Mode otomatis 4 pose beruntun aktif!' : 'Mode jepret satu per satu aktif!');
+    };
+
+    window.resetCaptures = function() {
+      state.myPhotos = [];
+      state.partnerPhotos = [];
+      state.currentPoseIndex = 0;
+      document.getElementById('poseCounterText').textContent = `Pose 1 / ${state.totalPoses}`;
+      for (let i = 0; i < 4; i++) {
+        const el = document.getElementById(`thumb-${i}`);
+        el.innerHTML = `${i + 1}`;
+      }
+    };
+
+    window.startPhotoSequence = async function() {
+      if (state.isCountingDown) return;
+
+      // Jika mode online & terhubung, picu countdown bersama di Firestore
+      if ((state.mode === 'online_host' || state.mode === 'online_guest') && state.db && state.roomCode) {
+        try {
+          const triggerTs = Date.now();
+          lastTriggerHandled = triggerTs;
+          const roomRef = doc(state.db, 'artifacts', state.appId, 'public', 'data', 'photobooth_rooms', state.roomCode);
+          await updateDoc(roomRef, { countdownTrigger: triggerTs });
+        } catch (e) {}
+      }
+
+      runLocalCountdownAndCapture();
+    };
+
+    async function runLocalCountdownAndCapture() {
+      if (state.isCountingDown) return;
+      state.isCountingDown = true;
+
+      const posesToTake = state.autoMode ? (state.totalPoses - state.myPhotos.length) : 1;
+
+      for (let step = 0; step < posesToTake; step++) {
+        if (state.myPhotos.length >= state.totalPoses) break;
+
+        await doCountdown(3);
+        captureSingleFrame();
+
+        if (step < posesToTake - 1) {
+          await new Promise(r => setTimeout(r, 900));
+        }
+      }
+
+      state.isCountingDown = false;
+
+      if (state.myPhotos.length >= state.totalPoses) {
+        await finalizeSession();
+      }
+    }
+
+    function doCountdown(seconds) {
+      return new Promise((resolve) => {
+        const overlay = document.getElementById('countdownOverlay');
+        const numEl = document.getElementById('countdownNumber');
+        overlay.classList.remove('hidden');
+        let current = seconds;
+        numEl.textContent = current;
+
+        const interval = setInterval(() => {
+          current--;
+          if (current > 0) {
+            numEl.textContent = current;
+          } else {
+            clearInterval(interval);
+            overlay.classList.add('hidden');
+            resolve();
+          }
+        }, 850);
+      });
+    }
+
+    function captureSingleFrame() {
+      // Efek Flash Layar
+      const flash = document.getElementById('flashOverlay');
+      flash.classList.remove('flash-active');
+      void flash.offsetWidth;
+      flash.classList.add('flash-active');
+
+      const canvas = document.getElementById('liveCanvas');
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+
+      const idx = state.myPhotos.length;
+      state.myPhotos.push(dataUrl);
+
+      // Update thumbnail bawah
+      const thumbEl = document.getElementById(`thumb-${idx}`);
+      if (thumbEl) {
+        thumbEl.innerHTML = `<img src="${dataUrl}" class="w-full h-full object-cover" />`;
+      }
+
+      const nextPose = Math.min(state.myPhotos.length + 1, state.totalPoses);
+      document.getElementById('poseCounterText').textContent = `Pose ${nextPose} / ${state.totalPoses}`;
+    }
+
+    async function finalizeSession() {
+      const isOnline = state.mode === 'online_host' || state.mode === 'online_guest';
+
+      if (isOnline) {
+        // Jika menggunakan Bot AI Partner
+        if (state.botPartnerActive) {
+          state.partnerPhotos = generateBotPartnerPhotos();
+        }
+
+        // Upload hasil foto ke Firestore agar pasangan bisa melihat & menggabungkannya
+        if (state.db && state.roomCode) {
+          try {
+            const roomRef = doc(state.db, 'artifacts', state.appId, 'public', 'data', 'photobooth_rooms', state.roomCode);
+            const compressed = await compressPhotoArray(state.myPhotos);
+            const payload = state.role === 'host'
+              ? { hostPhotos: JSON.stringify(compressed) }
+              : { guestPhotos: JSON.stringify(compressed) };
+            await updateDoc(roomRef, payload);
+          } catch (e) {}
+        }
+
+        // Jika pasangan belum bergabung/mengirim foto, beri pasangan lucu otomatis agar strip tetap 2 orang penuh
+        if (state.partnerPhotos.length < state.totalPoses) {
+          showToast('Menggabungkan strip foto berdua...', 'pink');
+          await new Promise(r => setTimeout(r, 1100));
+          if (state.partnerPhotos.length < state.totalPoses) {
+            state.partnerPhotos = generateBotPartnerPhotos();
+          }
+        }
+      }
+
+      showResultView();
+    }
+
+    async function compressPhotoArray(photos) {
+      const result = [];
+      for (const src of photos) {
+        const img = new Image();
+        img.src = src;
+        await new Promise(r => img.onload = r);
+        const c = document.createElement('canvas');
+        c.width = 320;
+        c.height = 240;
+        c.getContext('2d').drawImage(img, 0, 0, 320, 240);
+        result.push(c.toDataURL('image/jpeg', 0.65));
+      }
+      return result;
+    }
+
+    // Generate foto karakter pasangan lucu jika mode simulasi / pasangan belum masuk
+    function generateBotPartnerPhotos() {
+      const poses = ['😍', '✌️', '🥰', '🫶'];
+      const bgColors = ['#FCE4EC', '#E3F2FD', '#FFF3E0', '#F3E5F5'];
+      return poses.map((emoji, i) => {
+        const c = document.createElement('canvas');
+        c.width = 480;
+        c.height = 360;
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = bgColors[i];
+        ctx.fillRect(0, 0, 480, 360);
+        ctx.font = '110px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(emoji, 240, 200);
+        ctx.font = 'bold 22px Plus Jakarta Sans, sans-serif';
+        ctx.fillStyle = '#555';
+        ctx.fillText(`Pose #${i + 1} 💕`, 240, 290);
+        return c.toDataURL('image/png');
+      });
+    }
+
+    // ==================== RENDER FINAL LIFE4CUTS PHOTOSTRIP ====================
+    function showResultView() {
+      document.getElementById('viewBooth').classList.add('hidden');
+      document.getElementById('viewResult').classList.remove('hidden');
+      renderFinalStrip();
+      if (typeof confetti === 'function') {
+        confetti({ particleCount: 70, spread: 65, origin: { y: 0.6 } });
+      }
+    }
+
+    window.retakeAll = function() {
+      document.getElementById('viewResult').classList.add('hidden');
+      document.getElementById('viewBooth').classList.remove('hidden');
+      resetCaptures();
+    };
+
+    window.setStripTheme = function(theme) {
+      state.stripTheme = theme;
+      renderFinalStrip();
+    };
+
+    window.renderFinalStrip = async function() {
+      const canvas = document.getElementById('finalStripCanvas');
+      const ctx = canvas.getContext('2d');
+
+      const isDual = (state.mode === 'online_host' || state.mode === 'online_guest') && state.partnerPhotos.length >= 4;
+
+      // Dimensi Strip (Jika Dual: Side-by-side 2 kolom x 4 baris, Jika Solo/Lokal: 1 kolom x 4 baris)
+      const padding = 28;
+      const gap = 16;
+      const photoW = isDual ? 340 : 460;
+      const photoH = isDual ? 255 : 345;
+      const cols = isDual ? 2 : 1;
+      const rows = 4;
+      const footerH = 110;
+
+      const totalW = padding * 2 + cols * photoW + (cols - 1) * gap;
+      const totalH = padding * 2 + rows * photoH + (rows - 1) * gap + footerH;
+
+      canvas.width = totalW;
+      canvas.height = totalH;
+
+      // Warna Tema Bingkai Strip
+      const themes = {
+        black: { bg: '#18181B', text: '#FFFFFF', sub: '#A1A1AA' },
+        pink: { bg: '#FCE4EC', text: '#880E4F', sub: '#AD1457' },
+        cream: { bg: '#FDF6E3', text: '#4E342E', sub: '#795548' },
+        lavender: { bg: '#F3E5F5', text: '#4A148C', sub: '#7B1FA2' },
+        sky: { bg: '#E3F2FD', text: '#0D47A1', sub: '#1976D2' }
+      };
+      const t = themes[state.stripTheme] || themes.black;
+
+      ctx.fillStyle = t.bg;
+      ctx.fillRect(0, 0, totalW, totalH);
+
+      // Gambar tiap foto
+      for (let r = 0; r < rows; r++) {
+        const y = padding + r * (photoH + gap);
+
+        if (isDual) {
+          const leftSrc = state.role === 'host' ? state.myPhotos[r] : state.partnerPhotos[r];
+          const rightSrc = state.role === 'host' ? state.partnerPhotos[r] : state.myPhotos[r];
+
+          await drawImageOnStrip(ctx, leftSrc, padding, y, photoW, photoH);
+          await drawImageOnStrip(ctx, rightSrc, padding + photoW + gap, y, photoW, photoH);
+        } else {
+          await drawImageOnStrip(ctx, state.myPhotos[r], padding, y, photoW, photoH);
+        }
+      }
+
+      // Teks Caption & Tanggal di bagian bawah strip
+      const caption = document.getElementById('stripCaptionInput').value || '인생네컷 · Photobooth';
+      const today = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+
+      ctx.fillStyle = t.text;
+      ctx.font = 'bold 26px "Plus Jakarta Sans", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(caption, totalW / 2, totalH - 56);
+
+      ctx.fillStyle = t.sub;
+      ctx.font = '600 17px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText(`${today} · 인생네컷`, totalW / 2, totalH - 26);
+    };
+
+    function drawImageOnStrip(ctx, src, x, y, w, h) {
+      return new Promise((resolve) => {
+        if (!src) { resolve(); return; }
+        const img = new Image();
+        img.onload = () => {
+          ctx.save();
+          ctx.beginPath();
+          ctx.roundRect(x, y, w, h, 8);
+          ctx.clip();
+          ctx.drawImage(img, x, y, w, h);
+          ctx.restore();
+          resolve();
+        };
+        img.onerror = () => resolve();
+        img.src = src;
+      });
+    }
+
+    // --- Download & Share Hasil Foto Strip ---
+    window.downloadStripPNG = function() {
+      const canvas = document.getElementById('finalStripCanvas');
+      const link = document.createElement('a');
+      link.download = `photobooth-life4cuts-${Date.now()}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      showToast('Foto strip berhasil disimpan ke galeri! 📸', 'pink');
+    };
+
+    window.shareResultImage = async function() {
+      const canvas = document.getElementById('finalStripCanvas');
+      canvas.toBlob(async (blob) => {
+        const file = new File([blob], 'photobooth-life4cuts.png', { type: 'image/png' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              title: 'Hasil Photobooth 인생네컷',
+              text: 'Lihat hasil foto photobooth kita! 📸💕',
+              files: [file]
+            });
+          } catch (err) {}
+        } else {
+          downloadStripPNG();
+          showToast('Gambar diunduh! Siap kamu bagikan ke WA, IG, atau FB.', 'pink');
+        }
+      }, 'image/png');
+    };
+  </script>
+</body>
+</html>
